@@ -1,0 +1,8 @@
+{
+	"useTabs": true,
+	"tabWidth": 2,
+	"printWidth": 80,
+	"arrowParens": "always",
+	"proseWrap": "preserve",
+	"singleQuote": false
+}

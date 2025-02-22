@@ -1,0 +1,33 @@
+{
+	"compilerOptions": {
+		/* Language and Environment */
+		"target": "es2018", // Set the JavaScript language version for emitted JavaScript
+		"module": "commonjs", // Use CommonJS modules (default for Node.js)
+		"esModuleInterop": true, // Enable easier handling of CommonJS modules
+		"forceConsistentCasingInFileNames": true, // Ensure consistent casing in file names
+
+		/* Type Checking */
+		"strict": true, // Enable all strict type-checking options
+		"skipLibCheck": true, // Skip type checking of declaration files (improves performance)
+
+		/* Module Resolution */
+		"moduleResolution": "node", // Use Node.js-style module resolution
+		"baseUrl": "./", // Base directory for resolving non-relative module names
+		"paths": {
+			"@/*": ["src/*"] // Map '@/' to the 'src/' directory for cleaner imports
+		},
+		"typeRoots": ["./src/types", "./node_modules/@types"],
+		"types": ["node", "express"],
+		/* Emit */
+		"outDir": "./dist", // Output directory for compiled JavaScript files
+		"rootDir": "./src", // Root directory for TypeScript source files
+		"removeComments": true, // Remove comments from emitted JavaScript files
+		"sourceMap": true, // Generate source maps for debugging
+
+		/* Advanced */
+		"allowJs": true, // Allow importing JavaScript files
+		"resolveJsonModule": true // Allow importing JSON files
+	},
+	"include": ["src/**/*"], // Include all files in the 'src' directory
+	"exclude": ["node_modules", "dist"] // Exclude 'node_modules' and 'dist' directories
+}
