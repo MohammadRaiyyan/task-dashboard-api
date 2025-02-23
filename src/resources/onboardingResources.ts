@@ -1,4 +1,4 @@
-import { TaskPriorityType, TaskStatusType } from "@/interfaces/taskInterfaces";
+import { TaskPriorityType, TaskStatusType } from "../interfaces/taskInterfaces";
 
 export const seedTaskStatus = (userId: string): TaskStatusType[] => {
 	return [

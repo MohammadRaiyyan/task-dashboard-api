@@ -2,7 +2,6 @@ import bcrypt from "bcryptjs";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { LoginPayload, RegisterPayload } from "../interfaces/authInterfaces";
-import { Blacklist } from "../models/Blacklist";
 import { TaskPriority, TaskStatus } from "../models/Config";
 import { User } from "../models/User";
 import {
@@ -11,6 +10,10 @@ import {
 } from "../resources/onboardingResources";
 import { seedTasks } from "../seeders/taskSeeder";
 import { sendResponse } from "../utils/apiResponse";
+import {
+	generateAccessToken,
+	generateRefreshToken,
+} from "../utils/tokenService";
 
 export const register = async (req: Request, res: Response) => {
 	const { firstName, lastName, email, password }: RegisterPayload = req.body;
@@ -40,10 +43,11 @@ export const register = async (req: Request, res: Response) => {
 			email,
 			password: hashedPassword,
 		});
+
+		const accessToken = generateAccessToken(user.id);
+		const refreshToken = generateRefreshToken(user.id);
+		user.refreshToken = refreshToken;
 		await user.save();
-		const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
-			expiresIn: "1h",
-		});
 		// Seeding default template
 		try {
 			await TaskStatus.create(seedTaskStatus(user.id));
@@ -56,7 +60,10 @@ export const register = async (req: Request, res: Response) => {
 			return;
 		}
 
-		sendResponse(res, 201, "Account created successfully", { token });
+		sendResponse(res, 201, "Account created successfully", {
+			accessToken,
+			refreshToken,
+		});
 	} catch (error) {
 		if (error instanceof Error) {
 			console.log("error", error);
@@ -82,10 +89,14 @@ export const login = async (req: Request, res: Response) => {
 			sendResponse(res, 400, "Invalid credentials");
 			return;
 		}
-		const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
-			expiresIn: "1h",
+		const accessToken = generateAccessToken(user.id);
+		const refreshToken = generateRefreshToken(user.id);
+		user.refreshToken = refreshToken;
+		await user.save();
+		sendResponse(res, 200, "Logged in successfully", {
+			accessToken,
+			refreshToken,
 		});
-		sendResponse(res, 200, "Logged in successfully", { token });
 	} catch (error) {
 		if (error instanceof Error) {
 			sendResponse(res, 500, error.message);
@@ -129,35 +140,48 @@ export const resetPassword = async (req: Request, res: Response) => {
 };
 
 export const refreshToken = async (req: Request, res: Response) => {
-	const { token } = req.body;
+	const { refreshToken } = req.body;
+
+	if (!refreshToken) {
+		sendResponse(res, 400, "Refresh token is missing");
+		return;
+	}
 
 	try {
-		const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+		const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET!) as {
 			id: string;
 		};
-		const newToken = jwt.sign({ id: decoded.id }, process.env.JWT_SECRET!, {
-			expiresIn: "1h",
-		});
-		sendResponse(res, 200, "", { token: newToken });
-	} catch (error) {
-		if (error instanceof Error) {
-			sendResponse(res, 400, error.message);
+		const user = await User.findById(decoded.id);
+		if (!user || user.refreshToken !== refreshToken) {
+			sendResponse(res, 403, "Invalid refresh token");
 			return;
 		}
-		sendResponse(res, 400, "Invalid token");
+		const newToken = generateAccessToken(user.id);
+		sendResponse(res, 200, "", { accessToken: newToken });
+	} catch (error) {
+		if (error instanceof jwt.TokenExpiredError) {
+			sendResponse(res, 403, "Refresh token expired");
+		} else if (error instanceof jwt.JsonWebTokenError) {
+			sendResponse(res, 403, "Invalid refresh token");
+		} else {
+			sendResponse(res, 500, "Server error");
+		}
 	}
 };
 
 export const logout = async (req: Request, res: Response) => {
-	const token = req.header("Authorization")?.replace("Bearer ", "");
+	const { refreshToken } = req.body;
 
-	if (!token) {
-		sendResponse(res, 400, "Token is required");
+	if (!refreshToken) {
+		sendResponse(res, 400, "Refresh token is required");
 		return;
 	}
 	try {
-		const blackListed = new Blacklist({ token });
-		await blackListed.save();
+		const user = await User.findOne({ refreshToken });
+		if (user) {
+			user.refreshToken = null;
+			await user.save();
+		}
 		sendResponse(res, 200, "Logged out successfully");
 	} catch (error) {
 		if (error instanceof Error) {
