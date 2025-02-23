@@ -13,6 +13,7 @@ import { sendResponse } from "../utils/apiResponse";
 import {
 	generateAccessToken,
 	generateRefreshToken,
+	setRefreshTokenCookie,
 } from "../utils/tokenService";
 
 export const register = async (req: Request, res: Response) => {
@@ -59,10 +60,9 @@ export const register = async (req: Request, res: Response) => {
 			sendResponse(res, 500, "Error creating default data");
 			return;
 		}
-
+		setRefreshTokenCookie(res, refreshToken);
 		sendResponse(res, 201, "Account created successfully", {
 			accessToken,
-			refreshToken,
 		});
 	} catch (error) {
 		if (error instanceof Error) {
@@ -93,9 +93,9 @@ export const login = async (req: Request, res: Response) => {
 		const refreshToken = generateRefreshToken(user.id);
 		user.refreshToken = refreshToken;
 		await user.save();
+		setRefreshTokenCookie(res, refreshToken);
 		sendResponse(res, 200, "Logged in successfully", {
 			accessToken,
-			refreshToken,
 		});
 	} catch (error) {
 		if (error instanceof Error) {
@@ -116,6 +116,14 @@ export const resetPassword = async (req: Request, res: Response) => {
 		}
 		if (!currentPassword) {
 			sendResponse(res, 422, "Current Password is required");
+			return;
+		}
+		if (currentPassword === newPassword) {
+			sendResponse(
+				res,
+				400,
+				"New password must be different from the current password",
+			);
 			return;
 		}
 		const isCurrentPasswordMatched = await bcrypt.compare(
@@ -140,7 +148,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 };
 
 export const refreshToken = async (req: Request, res: Response) => {
-	const { refreshToken } = req.body;
+	const refreshToken = req.cookies.refreshToken;
 
 	if (!refreshToken) {
 		sendResponse(res, 400, "Refresh token is missing");
@@ -157,6 +165,10 @@ export const refreshToken = async (req: Request, res: Response) => {
 			return;
 		}
 		const newToken = generateAccessToken(user.id);
+		const newRefreshToken = generateRefreshToken(user.id);
+		user.refreshToken = newRefreshToken;
+		await user.save();
+		setRefreshTokenCookie(res, newRefreshToken);
 		sendResponse(res, 200, "", { accessToken: newToken });
 	} catch (error) {
 		if (error instanceof jwt.TokenExpiredError) {
@@ -170,7 +182,7 @@ export const refreshToken = async (req: Request, res: Response) => {
 };
 
 export const logout = async (req: Request, res: Response) => {
-	const { refreshToken } = req.body;
+	const refreshToken = req.cookies.refreshToken;
 
 	if (!refreshToken) {
 		sendResponse(res, 400, "Refresh token is required");
@@ -182,6 +194,11 @@ export const logout = async (req: Request, res: Response) => {
 			user.refreshToken = null;
 			await user.save();
 		}
+		res.clearCookie("refreshToken", {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "strict",
+		});
 		sendResponse(res, 200, "Logged out successfully");
 	} catch (error) {
 		if (error instanceof Error) {

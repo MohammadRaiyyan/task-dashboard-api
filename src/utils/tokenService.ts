@@ -1,3 +1,4 @@
+import { Response } from "express";
 import jwt from "jsonwebtoken";
 
 const ACCESS_TOKEN_EXPIRY = "1h";
@@ -12,5 +13,14 @@ export const generateAccessToken = (userId: string) => {
 export const generateRefreshToken = (userId: string) => {
 	return jwt.sign({ id: userId }, process.env.JWT_SECRET!, {
 		expiresIn: REFRESH_TOKEN_EXPIRY,
+	});
+};
+
+export const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
+	res.cookie("refreshToken", refreshToken, {
+		httpOnly: true,
+		secure: process.env.NODE_ENV === "production",
+		sameSite: "strict",
+		maxAge: 7 * 24 * 60 * 60 * 1000,
 	});
 };
