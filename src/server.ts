@@ -19,6 +19,9 @@ mongoose
 	.then(() => console.log("Connected to MongoDB"))
 	.catch((err) => console.error("Could not connect to MongoDb", err));
 
+app.get("/", (_, res) => {
+	res.send("API is working!");
+});
 app.use("/auth", authRoutes);
 app.use("/tasks", authenticate, taskRoutes);
 app.use("/config", authenticate, configRoutes);
