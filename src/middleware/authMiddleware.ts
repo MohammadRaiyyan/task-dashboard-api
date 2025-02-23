@@ -23,6 +23,6 @@ export const authenticate = async (
 		req.user = verified as { id: string };
 		next();
 	} catch (err) {
-		sendResponse(res, 400, "Invalid Token");
+		sendResponse(res, 401, "Session expired");
 	}
 };
