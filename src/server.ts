@@ -1,3 +1,4 @@
+import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import mongoose from "mongoose";
@@ -7,10 +8,10 @@ import configRoutes from "./routes/config";
 import insightRoutes from "./routes/insights";
 import manifestRoutes from "./routes/manifest";
 import taskRoutes from "./routes/tasks";
-
 dotenv.config();
 
 const app = express();
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 mongoose
