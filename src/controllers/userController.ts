@@ -1,6 +1,6 @@
-import { User } from "@/models/User";
-import { sendResponse } from "@/utils/apiResponse";
 import { Request, Response } from "express";
+import { User } from "../models/User";
+import { sendResponse } from "../utils/apiResponse";
 
 export const user = async (req: Request, res: Response) => {
 	try {

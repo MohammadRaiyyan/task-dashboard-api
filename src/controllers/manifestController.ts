@@ -13,7 +13,7 @@ export const getManifests = async (req: Request, res: Response) => {
 		});
 	} catch (error) {
 		if (error instanceof Error) {
-			sendResponse(res, 500, error.message);
+			sendResponse(res, 400, error.message);
 			return;
 		}
 		sendResponse(res, 500, "Server error");
