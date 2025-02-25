@@ -8,9 +8,9 @@ export const authenticate = async (
 	res: Response,
 	next: NextFunction,
 ) => {
-	const accessToken = req.header("Authorization")?.replace("Bearer ", "");
+	const accessToken = req.cookies.accessToken;
 	if (!accessToken) {
-		sendResponse(res, 401, "Access accessToken is required");
+		sendResponse(res, 401, "Unauthorized");
 		return;
 	}
 

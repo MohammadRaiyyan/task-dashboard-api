@@ -1,3 +1,4 @@
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
@@ -8,6 +9,7 @@ import configRoutes from "./routes/config";
 import insightRoutes from "./routes/insights";
 import manifestRoutes from "./routes/manifest";
 import taskRoutes from "./routes/tasks";
+import userRoutes from "./routes/user";
 dotenv.config();
 
 const app = express();
@@ -17,6 +19,7 @@ app.use(
 		credentials: true,
 	}),
 );
+app.use(cookieParser());
 app.use(express.json());
 
 mongoose
@@ -28,6 +31,7 @@ app.get("/", (_, res) => {
 	res.send("API is working!");
 });
 app.use("/auth", authRoutes);
+app.use("/user", authenticate, userRoutes);
 app.use("/tasks", authenticate, taskRoutes);
 app.use("/config", authenticate, configRoutes);
 app.use("/insights", authenticate, insightRoutes);

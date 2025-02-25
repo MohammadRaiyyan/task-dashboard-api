@@ -13,6 +13,7 @@ import { sendResponse } from "../utils/apiResponse";
 import {
 	generateAccessToken,
 	generateRefreshToken,
+	setAccessTokenCookie,
 	setRefreshTokenCookie,
 } from "../utils/tokenService";
 
@@ -47,7 +48,7 @@ export const register = async (req: Request, res: Response) => {
 
 		const accessToken = generateAccessToken(user.id);
 		const refreshToken = generateRefreshToken(user.id);
-		user.refreshToken = refreshToken;
+
 		await user.save();
 		// Seeding default template
 		try {
@@ -61,9 +62,8 @@ export const register = async (req: Request, res: Response) => {
 			return;
 		}
 		setRefreshTokenCookie(res, refreshToken);
-		sendResponse(res, 201, "Account created successfully", {
-			accessToken,
-		});
+		setAccessTokenCookie(res, accessToken);
+		sendResponse(res, 201, "Account created successfully");
 	} catch (error) {
 		if (error instanceof Error) {
 			console.log("error", error);
@@ -91,12 +91,10 @@ export const login = async (req: Request, res: Response) => {
 		}
 		const accessToken = generateAccessToken(user.id);
 		const refreshToken = generateRefreshToken(user.id);
-		user.refreshToken = refreshToken;
 		await user.save();
 		setRefreshTokenCookie(res, refreshToken);
-		sendResponse(res, 200, "Logged in successfully", {
-			accessToken,
-		});
+		setAccessTokenCookie(res, accessToken);
+		sendResponse(res, 200, "Logged in successfully");
 	} catch (error) {
 		if (error instanceof Error) {
 			sendResponse(res, 500, error.message);
@@ -111,7 +109,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 	try {
 		const user = await User.findOne({ email });
 		if (!user) {
-			sendResponse(res, 400, "User not found");
+			sendResponse(res, 404, "User not found");
 			return;
 		}
 		if (!currentPassword) {
@@ -151,7 +149,7 @@ export const refreshToken = async (req: Request, res: Response) => {
 	const refreshToken = req.cookies.refreshToken;
 
 	if (!refreshToken) {
-		sendResponse(res, 400, "Refresh token is missing");
+		sendResponse(res, 401, "Refresh token is missing");
 		return;
 	}
 
@@ -160,21 +158,21 @@ export const refreshToken = async (req: Request, res: Response) => {
 			id: string;
 		};
 		const user = await User.findById(decoded.id);
-		if (!user || user.refreshToken !== refreshToken) {
-			sendResponse(res, 403, "Invalid refresh token");
+		if (!user) {
+			sendResponse(res, 401, "Session expired");
 			return;
 		}
 		const newToken = generateAccessToken(user.id);
 		const newRefreshToken = generateRefreshToken(user.id);
-		user.refreshToken = newRefreshToken;
 		await user.save();
 		setRefreshTokenCookie(res, newRefreshToken);
-		sendResponse(res, 200, "", { accessToken: newToken });
+		setAccessTokenCookie(res, newToken);
+		sendResponse(res, 200, "");
 	} catch (error) {
 		if (error instanceof jwt.TokenExpiredError) {
-			sendResponse(res, 403, "Refresh token expired");
+			sendResponse(res, 401, "Refresh token expired");
 		} else if (error instanceof jwt.JsonWebTokenError) {
-			sendResponse(res, 403, "Invalid refresh token");
+			sendResponse(res, 401, "Invalid refresh token");
 		} else {
 			sendResponse(res, 500, "Server error");
 		}
@@ -185,16 +183,16 @@ export const logout = async (req: Request, res: Response) => {
 	const refreshToken = req.cookies.refreshToken;
 
 	if (!refreshToken) {
-		sendResponse(res, 400, "Refresh token is required");
+		sendResponse(res, 401, "Refresh token is required");
 		return;
 	}
 	try {
-		const user = await User.findOne({ refreshToken });
-		if (user) {
-			user.refreshToken = null;
-			await user.save();
-		}
 		res.clearCookie("refreshToken", {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "strict",
+		});
+		res.clearCookie("accessToken", {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
 			sameSite: "strict",
@@ -202,9 +200,9 @@ export const logout = async (req: Request, res: Response) => {
 		sendResponse(res, 200, "Logged out successfully");
 	} catch (error) {
 		if (error instanceof Error) {
-			sendResponse(res, 500, error.message);
+			sendResponse(res, 401, error.message);
 			return;
 		}
-		sendResponse(res, 500, "Invalid token");
+		sendResponse(res, 401, "Invalid token");
 	}
 };
