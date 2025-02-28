@@ -163,9 +163,7 @@ export const refreshToken = async (req: Request, res: Response) => {
 			return;
 		}
 		const newToken = generateAccessToken(user.id);
-		const newRefreshToken = generateRefreshToken(user.id);
 		await user.save();
-		setRefreshTokenCookie(res, newRefreshToken);
 		setAccessTokenCookie(res, newToken);
 		sendResponse(res, 200, "");
 	} catch (error) {
