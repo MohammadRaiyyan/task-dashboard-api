@@ -1,10 +1,10 @@
 import express from "express";
 import {
-	createTask,
-	deleteTask,
-	getTaskById,
-	getTasks,
-	updateTask,
+  createTask,
+  deleteTask,
+  getTaskById,
+  getTasks,
+  updateTask,
 } from "../controllers/taskController";
 
 const router = express.Router();

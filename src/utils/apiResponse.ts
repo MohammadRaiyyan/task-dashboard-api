@@ -11,21 +11,21 @@ import { ApiResponse } from "../interfaces/apiResponse";
  * @param pagination - Optional pagination metadata.
  */
 export const sendResponse = <T>(
-	res: Response,
-	status: number,
-	message: string,
-	data?: T,
-	pagination?: {
-		page: number;
-		limit: number;
-		total: number;
-	},
+  res: Response,
+  status: number,
+  message: string,
+  data?: T,
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+  },
 ) => {
-	const response: ApiResponse<T> = {
-		status,
-		message,
-		data,
-		pagination,
-	};
-	res.status(status).json(response);
+  const response: ApiResponse<T> = {
+    status,
+    message,
+    data,
+    pagination,
+  };
+  res.status(status).json(response);
 };
