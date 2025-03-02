@@ -43,6 +43,7 @@ export const getInsights = async (req: Request, res: Response) => {
 		});
 
 		const recentTasks = await Task.find({ userId })
+			.select("-description -userId -parentTask -subTasks")
 			.sort({ createdAt: -1 })
 			.limit(5);
 

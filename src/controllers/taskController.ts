@@ -16,7 +16,10 @@ export const getTasks = async (req: Request, res: Response) => {
 		if (status) filters.status = status;
 		if (priority) filters.priority = priority;
 		if (createdAt) filters.createdAt = { $gte: new Date(createdAt as string) };
-		const tasks = await Task.find(filters).skip(skip).limit(limitNumber);
+		const tasks = await Task.find(filters)
+			.select("-description -userId -parentTask -subTasks")
+			.skip(skip)
+			.limit(limitNumber);
 
 		const total = await Task.countDocuments(filters);
 		sendResponse(res, 200, "", tasks, {
@@ -26,30 +29,52 @@ export const getTasks = async (req: Request, res: Response) => {
 		});
 	} catch (error) {
 		if (error instanceof Error) {
-			sendResponse(res, 500, error.message);
+			sendResponse(res, 400, error.message);
 			return;
 		}
 		sendResponse(res, 500, "Server error");
 	}
 };
 
-export const createTask = async (req: Request, res: Response) => {
-	const { title, description, status, priority, dueOn } = req.body;
+export const getTaskById = async (req: Request, res: Response) => {
+	const { id } = req.params;
+
 	try {
-		const task = new Task({
+		const task = await Task.findById(id)
+			.populate("parentTask", "title")
+			.populate("subTasks");
+		sendResponse(res, 200, "", task);
+	} catch (error) {
+		if (error instanceof Error) {
+			sendResponse(res, 400, error.message);
+			return;
+		}
+		sendResponse(res, 500, "Server error");
+	}
+};
+export const createTask = async (req: Request, res: Response) => {
+	const { title, description, status, priority, dueOn, parentTask } = req.body;
+	try {
+		const newTask = new Task({
 			title,
 			description,
 			status,
 			priority,
 			dueOn,
 			userId: req.user?.id,
+			parentTask: parentTask || null,
 		});
-		await task.save();
+		await newTask.save();
+		if (parentTask) {
+			await Task.findByIdAndUpdate(parentTask, {
+				$push: { subTasks: newTask._id },
+			});
+		}
 
-		sendResponse(res, 201, "Task created successfully", task);
+		sendResponse(res, 201, "Task created successfully");
 	} catch (error) {
 		if (error instanceof Error) {
-			sendResponse(res, 500, error.message);
+			sendResponse(res, 400, error.message);
 			return;
 		}
 		sendResponse(res, 500, "Server error");
@@ -72,7 +97,7 @@ export const updateTask = async (req: Request, res: Response) => {
 		sendResponse(res, 200, "Task updated successfully", task);
 	} catch (error) {
 		if (error instanceof Error) {
-			sendResponse(res, 500, error.message);
+			sendResponse(res, 400, error.message);
 			return;
 		}
 		sendResponse(res, 500, "Server error");
@@ -90,7 +115,7 @@ export const deleteTask = async (req: Request, res: Response) => {
 		sendResponse(res, 200, "Task deleted successfully");
 	} catch (error) {
 		if (error instanceof Error) {
-			sendResponse(res, 500, error.message);
+			sendResponse(res, 400, error.message);
 			return;
 		}
 		sendResponse(res, 500, "Server error");

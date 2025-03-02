@@ -20,6 +20,17 @@ const TaskSchema = new mongoose.Schema(
 			ref: "User",
 			required: true,
 		},
+		parentTask: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "Task",
+			default: null,
+		},
+		subTasks: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Task",
+			},
+		],
 	},
 	{ timestamps: true },
 );
