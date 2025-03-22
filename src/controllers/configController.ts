@@ -1,9 +1,9 @@
-import { AppError } from "@/middleware/errorHandler";
-import { Task } from "@/models/Task";
 import type { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import type { TaskEntityType } from "../interfaces/taskInterfaces";
+import { AppError } from "../middleware/errorHandler";
 import { TaskPriority, TaskStatus, TaskTag } from "../models/Config";
+import { Task } from "../models/Task";
 import { sendResponse } from "../utils/apiResponse";
 
 export const createStatus = asyncHandler(
