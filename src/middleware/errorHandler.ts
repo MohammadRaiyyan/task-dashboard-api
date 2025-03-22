@@ -1,10 +1,10 @@
-import { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { Error as MongooseError } from "mongoose";
 
 export class AppError extends Error {
   statusCode: number;
 
-  constructor(message: string, statusCode: number = 500) {
+  constructor(message: string, statusCode = 500) {
     super(message);
     this.statusCode = statusCode;
   }

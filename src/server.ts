@@ -24,7 +24,12 @@ app.use(cookieParser());
 app.use(express.json());
 
 mongoose
-  .connect(process.env.MONGO_URI!)
+  .connect(
+    process.env.MONGO_URI ||
+      (() => {
+        throw new Error("MONGO_URI is not defined in environment variables");
+      })(),
+  )
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("Could not connect to MongoDb", err));
 

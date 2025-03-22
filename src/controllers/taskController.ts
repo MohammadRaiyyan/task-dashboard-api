@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 
 import asyncHandler from "express-async-handler";
 import { AppError } from "../middleware/errorHandler";
@@ -7,22 +7,33 @@ import { sendResponse } from "../utils/apiResponse";
 
 export const getTasks = asyncHandler(async (req: Request, res: Response) => {
   const { status, priority, createdAt, page, limit } = req.query;
-  const pageNumber = parseInt(page as string) || 1;
-  const limitNumber = parseInt(limit as string) || 10;
+  const pageNumber = Number.parseInt(page as string) || 1;
+  const limitNumber = Number.parseInt(limit as string) || 10;
   const skip = (pageNumber - 1) * limitNumber;
-  const filters: any = {
+  const filters: { [key: string]: string | number | object | undefined } = {
     userId: req.user?.id,
   };
   if (status) filters.status = status;
   if (priority) filters.priority = priority;
   if (createdAt) filters.createdAt = { $gte: new Date(createdAt as string) };
+
   const tasks = await Task.find(filters)
     .select("-description -userId -parentTask -subTasks")
+    .populate("status")
+    .populate("priority")
     .skip(skip)
-    .limit(limitNumber);
+    .limit(limitNumber)
+    .lean();
+
+  const tasksWithSubTaskCount = await Promise.all(
+    tasks.map(async (task) => {
+      const subTaskCount = await Task.countDocuments({ parentTask: task._id });
+      return { ...task, subTaskCount };
+    }),
+  );
 
   const total = await Task.countDocuments(filters);
-  sendResponse(res, 200, "", tasks, {
+  sendResponse(res, 200, "", tasksWithSubTaskCount, {
     limit: limitNumber,
     page: pageNumber,
     total,

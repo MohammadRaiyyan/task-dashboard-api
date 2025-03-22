@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { User } from "../models/User";
 import { sendResponse } from "../utils/apiResponse";
@@ -15,7 +15,11 @@ export const authenticate = async (
   }
 
   try {
-    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET!) as {
+    if (!process.env.JWT_SECRET) {
+      sendResponse(res, 500, "Missing environment variables");
+      return;
+    }
+    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET) as {
       id: string;
     };
 

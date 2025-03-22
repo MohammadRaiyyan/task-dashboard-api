@@ -1,8 +1,11 @@
 import bcrypt from "bcryptjs";
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import jwt from "jsonwebtoken";
-import { LoginPayload, RegisterPayload } from "../interfaces/authInterfaces";
+import type {
+  LoginPayload,
+  RegisterPayload,
+} from "../interfaces/authInterfaces";
 import { AppError } from "../middleware/errorHandler";
 import { TaskPriority, TaskStatus } from "../models/Config";
 import { User } from "../models/User";
@@ -78,12 +81,18 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
 export const resetPassword = asyncHandler(
   async (req: Request, res: Response) => {
-    const { email, newPassword } = req.body;
+    const { email, currentPassword, newPassword } = req.body;
 
     const user = await User.findOne({ email });
     if (!user) {
       throw new AppError("User not found", 404);
     }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      throw new AppError("Current password is incorrect", 400);
+    }
+
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     await user.save();
@@ -97,7 +106,10 @@ export const refreshToken = asyncHandler(
     if (!refreshToken) {
       throw new AppError("Refresh token is missing", 401);
     }
-    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET!) as {
+    if (!process.env.JWT_SECRET) {
+      throw new AppError("Missing environment variables", 500);
+    }
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET) as {
       id: string;
     };
     const user = await User.findById(decoded.id);

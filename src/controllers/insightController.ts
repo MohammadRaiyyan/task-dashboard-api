@@ -1,7 +1,7 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import mongoose from "mongoose";
-import { Insights } from "../interfaces/insightInterfaces";
+import type { Insights } from "../interfaces/insightInterfaces";
 import { TaskStatus } from "../models/Config";
 import { Task } from "../models/Task";
 import { sendResponse } from "../utils/apiResponse";

@@ -1,4 +1,4 @@
-import { Task } from "./taskInterfaces";
+import type { Task } from "./taskInterfaces";
 
 export type TaskBreakdown = {
   title: string;

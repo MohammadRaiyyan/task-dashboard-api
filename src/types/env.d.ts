@@ -9,7 +9,7 @@ export interface EnvVariables {
   FRONTEND_URL: string;
 }
 
-declare module EnvVariables {
+declare namespace EnvVariables {
   interface EnvVariables {
     NODE_ENV: "development" | "production" | "test";
     PORT: string;

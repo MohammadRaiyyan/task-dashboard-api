@@ -1,6 +1,6 @@
 // src/utils/apiResponse.ts
-import { Response } from "express";
-import { ApiResponse } from "../interfaces/apiResponse";
+import type { Response } from "express";
+import type { ApiResponse } from "../interfaces/apiResponse";
 
 /**
  * Utility function to send a standardized API response.

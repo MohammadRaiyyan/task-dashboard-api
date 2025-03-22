@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import { TaskPriority, TaskStatus } from "../models/Config";
 import { User } from "../models/User";

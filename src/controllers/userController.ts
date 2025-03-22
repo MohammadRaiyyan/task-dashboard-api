@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import expressAsyncHandler from "express-async-handler";
 import { AppError } from "../middleware/errorHandler";
 import { User } from "../models/User";
