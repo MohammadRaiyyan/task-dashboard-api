@@ -2,6 +2,7 @@ import express from "express";
 import {
   createTask,
   deleteTask,
+  getSubTasks,
   getTaskById,
   getTasks,
   updateTask,
@@ -10,6 +11,7 @@ import {
 const router = express.Router();
 
 router.get("/", getTasks);
+router.get("/subtasks", getSubTasks);
 router.get("/:id", getTaskById);
 router.post("/", createTask);
 router.put("/:id", updateTask);

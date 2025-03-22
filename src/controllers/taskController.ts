@@ -96,3 +96,18 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
   }
   sendResponse(res, 200, "Task deleted successfully");
 });
+
+export const getSubTasks = asyncHandler(async (req: Request, res: Response) => {
+  const { parentId } = req.params;
+  if (!parentId) {
+    throw new AppError("Parent task ID is missing", 400);
+  }
+
+  const subTasks = await Task.find({ parentTask: parentId })
+    .select("-userId -parentTask")
+    .populate("status")
+    .populate("priority")
+    .lean();
+
+  sendResponse(res, 200, "", subTasks);
+});
