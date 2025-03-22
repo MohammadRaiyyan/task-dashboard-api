@@ -11,7 +11,7 @@ import {
 const router = express.Router();
 
 router.get("/", getTasks);
-router.get("/subtasks", getSubTasks);
+router.get("/:parentId/subtasks", getSubTasks);
 router.get("/:id", getTaskById);
 router.post("/", createTask);
 router.put("/:id", updateTask);
