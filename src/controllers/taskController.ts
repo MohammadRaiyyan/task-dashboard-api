@@ -1,9 +1,11 @@
 import type { Request, Response } from "express";
 
+import { TaskPriority, TaskStatus } from "@/models/Config";
 import asyncHandler from "express-async-handler";
 import { AppError } from "../middleware/errorHandler";
 import { Task } from "../models/Task";
 import { sendResponse } from "../utils/apiResponse";
+
 
 export const getTasks = asyncHandler(async (req: Request, res: Response) => {
   const { status, priority, createdAt, page, limit, sortBy, search } = req.query;
@@ -16,7 +18,7 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
   };
 
   if (status && !status.toString().startsWith("All")) {
-    const statusDoc = await Task.findOne({ label: status });
+    const statusDoc = await TaskStatus.findOne({ label: status });
     if (statusDoc) {
       const statusFilter = { status: statusDoc._id };
       filters.$and = Array.isArray(filters.$and) ? [...filters.$and, statusFilter] : [statusFilter];
@@ -24,7 +26,7 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
   }
 
   if (priority && !priority.toString().startsWith("All")) {
-    const priorityDoc = await Task.findOne({ label: priority });
+    const priorityDoc = await TaskPriority.findOne({ label: priority });
     if (priorityDoc) {
       const priorityFilter = { priority: priorityDoc._id };
       filters.$and = Array.isArray(filters.$and) ? [...filters.$and, priorityFilter] : [priorityFilter];
