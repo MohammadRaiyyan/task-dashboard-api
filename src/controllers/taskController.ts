@@ -11,24 +11,41 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
   const limitNumber = Number.parseInt(limit as string) || 10;
   const skip = (pageNumber - 1) * limitNumber;
 
-  const filters: { [key: string]: string | number | object | undefined } = {
+  const filters: { [key: string]: string | number | object | undefined } & { $and?: object[] } = {
     userId: req.user?.id,
   };
 
   if (status && !status.toString().startsWith("All")) {
     const statusDoc = await Task.findOne({ label: status });
-    if (statusDoc) filters.status = statusDoc._id;
+    if (statusDoc) {
+      const statusFilter = { status: statusDoc._id };
+      filters.$and = Array.isArray(filters.$and) ? [...filters.$and, statusFilter] : [statusFilter];
+    }
   }
 
   if (priority && !priority.toString().startsWith("All")) {
     const priorityDoc = await Task.findOne({ label: priority });
-    if (priorityDoc) filters.priority = priorityDoc._id;
+    if (priorityDoc) {
+      const priorityFilter = { priority: priorityDoc._id };
+      filters.$and = Array.isArray(filters.$and) ? [...filters.$and, priorityFilter] : [priorityFilter];
+    }
   }
 
-  if (createdAt) filters.createdAt = { $gte: new Date(createdAt as string) };
+  if (createdAt) {
+    const date = new Date(createdAt as string);
+    if (!Number.isNaN(date.getTime())) {
+      filters.createdAt = { $gte: date };
+    }
+  }
 
   if (search) {
-    filters.title = { $regex: search as string, $options: "i" };
+    const searchFilter = {
+      $or: [
+        { title: { $regex: search as string, $options: "i" } },
+        { description: { $regex: search as string, $options: "i" } },
+      ],
+    };
+    filters.$and = Array.isArray(filters.$and) ? [...filters.$and, searchFilter] : [searchFilter];
   }
 
   let sort: { [key: string]: 1 | -1 } = {};
@@ -49,26 +66,38 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
       sort = { createdAt: -1 };
   }
 
-  const tasks = await Task.find(filters)
-    .select("-description -userId -parentTask -subTasks")
-    .populate("status")
-    .populate("priority")
-    .sort(sort)
-    .skip(skip)
-    .limit(limitNumber)
-    .lean();
-
-  const tasksWithSubTaskCount = await Promise.all(
-    tasks.map(async (task) => {
-      const subTaskCount = await Task.countDocuments({ parentTask: task._id });
-      return { ...task, subTaskCount };
-    }),
-  );
+  const tasks = await Task.aggregate([
+    { $match: filters },
+    { $sort: sort },
+    { $skip: skip },
+    { $limit: limitNumber },
+    {
+      $lookup: {
+        from: "tasks",
+        localField: "_id",
+        foreignField: "parentTask",
+        as: "subTasks",
+      },
+    },
+    {
+      $addFields: {
+        subTaskCount: { $size: "$subTasks" },
+      },
+    },
+    {
+      $project: {
+        description: 0,
+        userId: 0,
+        parentTask: 0,
+        subTasks: 0,
+      },
+    },
+  ]);
 
   const total = await Task.countDocuments(filters);
   const hasNext = pageNumber * limitNumber < total;
 
-  sendResponse(res, 200, "", tasksWithSubTaskCount, {
+  sendResponse(res, 200, "", tasks, {
     limit: limitNumber,
     page: pageNumber,
     total,
