@@ -15,12 +15,12 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
     userId: req.user?.id,
   };
 
-  if (status) {
+  if (status && !status.toString().startsWith("All")) {
     const statusDoc = await Task.findOne({ label: status });
     if (statusDoc) filters.status = statusDoc._id;
   }
 
-  if (priority) {
+  if (priority && !priority.toString().startsWith("All")) {
     const priorityDoc = await Task.findOne({ label: priority });
     if (priorityDoc) filters.priority = priorityDoc._id;
   }
