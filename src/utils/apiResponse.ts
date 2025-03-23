@@ -19,6 +19,7 @@ export const sendResponse = <T>(
     page: number;
     limit: number;
     total: number;
+    hasNext: boolean
   },
 ) => {
   const response: ApiResponse<T> = {

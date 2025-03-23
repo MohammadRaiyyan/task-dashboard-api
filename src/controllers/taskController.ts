@@ -6,21 +6,54 @@ import { Task } from "../models/Task";
 import { sendResponse } from "../utils/apiResponse";
 
 export const getTasks = asyncHandler(async (req: Request, res: Response) => {
-  const { status, priority, createdAt, page, limit } = req.query;
+  const { status, priority, createdAt, page, limit, sortBy, search } = req.query;
   const pageNumber = Number.parseInt(page as string) || 1;
   const limitNumber = Number.parseInt(limit as string) || 10;
   const skip = (pageNumber - 1) * limitNumber;
+
   const filters: { [key: string]: string | number | object | undefined } = {
     userId: req.user?.id,
   };
-  if (status) filters.status = status;
-  if (priority) filters.priority = priority;
+
+  if (status) {
+    const statusDoc = await Task.findOne({ label: status });
+    if (statusDoc) filters.status = statusDoc._id;
+  }
+
+  if (priority) {
+    const priorityDoc = await Task.findOne({ label: priority });
+    if (priorityDoc) filters.priority = priorityDoc._id;
+  }
+
   if (createdAt) filters.createdAt = { $gte: new Date(createdAt as string) };
+
+  if (search) {
+    filters.title = { $regex: search as string, $options: "i" };
+  }
+
+  let sort: { [key: string]: 1 | -1 } = {};
+  switch (sortBy) {
+    case "Newest":
+      sort = { createdAt: -1 };
+      break;
+    case "Oldest":
+      sort = { createdAt: 1 };
+      break;
+    case "Priority":
+      sort = { priority: -1 };
+      break;
+    case "Due Date":
+      sort = { dueOn: 1 };
+      break;
+    default:
+      sort = { createdAt: -1 };
+  }
 
   const tasks = await Task.find(filters)
     .select("-description -userId -parentTask -subTasks")
     .populate("status")
     .populate("priority")
+    .sort(sort)
     .skip(skip)
     .limit(limitNumber)
     .lean();
@@ -33,10 +66,13 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
   );
 
   const total = await Task.countDocuments(filters);
+  const hasNext = pageNumber * limitNumber < total;
+
   sendResponse(res, 200, "", tasksWithSubTaskCount, {
     limit: limitNumber,
     page: pageNumber,
     total,
+    hasNext,
   });
 });
 
