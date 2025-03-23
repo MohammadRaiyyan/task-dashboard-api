@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
 
-import { TaskPriority, TaskStatus } from "@/models/Config";
 import asyncHandler from "express-async-handler";
 import { AppError } from "../middleware/errorHandler";
+import { TaskPriority, TaskStatus } from "../models/Config";
 import { Task } from "../models/Task";
 import { sendResponse } from "../utils/apiResponse";
 
