@@ -16,7 +16,7 @@ dotenv.config();
 const app = express();
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: process.env.ALLOWED_HOST,
     credentials: true,
   }),
 );
@@ -26,9 +26,9 @@ app.use(express.json());
 mongoose
   .connect(
     process.env.MONGO_URI ||
-      (() => {
-        throw new Error("MONGO_URI is not defined in environment variables");
-      })(),
+    (() => {
+      throw new Error("MONGO_URI is not defined in environment variables");
+    })(),
   )
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("Could not connect to MongoDb", err));
